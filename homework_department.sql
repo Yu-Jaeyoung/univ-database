@@ -255,32 +255,62 @@ SELECT dno
  WHERE E.dno = D.deptno
    AND (E.empname = '김창섭' OR D.deptname = '개발')
  GROUP BY dno;
+
+SELECT DISTINCT deptno
+  FROM employee A, department B
+ WHERE A.dno = B.deptno
+   AND (A.empname = '김창섭' OR B.deptname = '개발');
+
+-- Q26-1. 김창섭이 속한 부서이거나 개발 부서의 부서 번호를 검색하라. (집합 연산 사용)
+SELECT dno
+  FROM employee
+ WHERE empname = '김창섭'
+UNION
+SELECT deptno
+  FROM department
+ WHERE deptname ='개발'; 
  
 -- Q27. 모든 사원의 이름과 이 사원이 속한 부서 이름을 검색하라.
 SELECT E.empname, D.deptname
   FROM employee E, department D
  WHERE E.dno = D.deptno;
+
+SELECT empname, deptname
+  FROM employee A INNER JOIN department B ON A.dno = B.deptno;
  
 -- Q28. 모든 사원들에 대해서 사원 이름과 근무하는 부서의 층을 검색하라.
 SELECT employee.empname AS "사원 이름", department.floor AS "층"
   FROM employee, department
  WHERE employee.dno = department.deptno;
  
+SELECT empname, floor
+  FROM employee A INNER JOIN department B ON A.dno = B.deptno;
+ 
 -- Q29. 개발 부서에 근무하는 모든 사원들에 대해서 이름과 직급을 검색하라.
 SELECT employee.empname AS "이름", employee.title AS "직급"
   FROM employee, department
  WHERE employee.dno = department.deptno
    AND department.deptname = '개발';
-   
+
+SELECT empname, title
+  FROM employee A INNER JOIN department B on A.dno = B.deptno
+ WHERE B.deptname= '개발';
+
 -- Q30. 모든 사원에 대해서 사원의 이름과 직속 상사의 이름을 검색하라.
 SELECT E.empname AS "이름", EM.empname AS "직속 상사"
   FROM employee E, employee EM
  WHERE E.manager = EM.empno;
 
+SELECT A.empname, B.empname
+ FROM employee A INNER JOIN employee B ON A.manager = B.empno;
+
 -- Q31. 모든 사원들에 대해서 소속 부서 이름, 사원의 이름, 직급, 급여를 검색하라.
 SELECT deptname AS "부서이름", empname AS "이름", title AS "직급", salary AS "급여"
   FROM employee, department
  WHERE employee.dno = department.deptno;
+ 
+SELECT B.deptname, A.empname, A.title, A.salary
+  FROM employee A INNER JOIN department B ON A.dno = B.deptno;
  
 -- Q32. 모든 사원들에 대해서 소속 부서 이름, 사원의 이름, 직급, 급여를 검색하라.
 -- 단, 부서 이름에 대해서 오름차순, 부서이름이 같은 경우에는 SALARY에 대해서 내림차순으로 정렬하라.
@@ -289,11 +319,25 @@ SELECT deptname, empname, title, salary
  WHERE employee.dno = department.deptno
  ORDER BY deptname ASC, salary DESC;
  
+SELECT B.deptname, A.empname, A.title, A.salary
+  FROM employee A INNER JOIN department B ON A.dno = B.deptno
+ ORDER BY B.deptname ASC, A.salary DESC;
+ 
 -- Q33. 영업부나 개발부에 근무하는 사원들의 이름을 검색하라.
 SELECT empname
   FROM employee, department
  WHERE employee.dno = department.deptno
    AND (deptname = '영업' OR deptname = '개발');
+   
+SELECT B.empname
+  FROM department A INNER JOIN employee B on A.deptno = B.dno
+ WHERE A.deptname IN ('영업', '개발');
+ 
+SELECT empname
+  FROM employee
+ WHERE dno IN (SELECT deptno
+                 FROM department
+                WHERE deptname = '영업' OR deptname = '개발');
 
 -- Q34. 김상원과 같은 부서에 근무하는 사원들의 이름과 직급을 검색하라.
 SELECT empname, title
@@ -302,6 +346,13 @@ SELECT empname, title
                           FROM employee
                          WHERE employee.empname = '김상원')
   AND NOT empname = '김상원';
+
+SELECT empname, title
+  FROM employee
+ WHERE dno = (SELECT dno
+                FROM employee
+               WHERE empname = '김상원')
+   AND NOT empname = '김상원';
   
 -- Q35. 전체 사원들의 평균 급여보다 많이 받는 사원들의 이름, 급여, 평균 급여를 검색하라.
 -- 힌트: 평균 급여 컬럼의 생성은 다음과 같이 할 수 있다.
@@ -311,6 +362,11 @@ SELECT E.empname, E.salary, ROUND(AVG(EM.salary),0) AS "평균급여"
  WHERE E.salary >= (SELECT ROUND(AVG(salary),0)
                       FROM employee)
  GROUP BY E.empname, E.salary;
+
+SELECT empname, salary, average
+  FROM employee, (SELECT round(AVG(salary),0) as average
+                    FROM employee) A
+ WHERE salary > A.average;
 
 -- Q35. 민기형
 SELECT e.empname, e.salary, average
@@ -324,15 +380,24 @@ SELECT employee.empname
  WHERE department.deptno = employee.dno
    AND department.floor BETWEEN 8 AND 9;
 
--- Q37. 소속 사원이 한 명도 없는 부서에 대해서 부서 번호, 부서 이름, 층을 검색하라. 
+SELECT empname
+  FROM employee A INNER JOIN department B ON A.dno = B.deptno
+ WHERE floor IN (8,9);
+
+-- Q37-1. 소속 사원이 한 명도 없는 부서에 대해서 부서 번호, 부서 이름, 층을 검색하라. 
 SELECT deptno, deptname, floor
   FROM department
  WHERE department.deptno NOT IN (SELECT department.deptno
                                    FROM department, employee
                                   WHERE department.deptno = employee.dno);
 
--- Q37. 소속 사원이 한 명도 없는 부서에 대해서 부서 번호, 부서 이름, 층을 검색하라. 
+-- Q37-2. 소속 사원이 한 명도 없는 부서에 대해서 부서 번호, 부서 이름, 층을 검색하라. 
 SELECT deptno, deptname, floor
   FROM department
   LEFT OUTER JOIN employee ON employee.dno= department.deptno
  WHERE employee.empno IS NULL;
+ 
+-- Q37-2(1). 소속 사원이 한 명도 없는 부서에 대해서 부서 번호, 부서 이름, 층을 검색하라.
+SELECT A.deptno, A.deptname, A.floor
+  FROM department A LEFT OUTER JOIN employee B ON A.deptno = B.dno
+ WHERE B.empno IS NULL;
