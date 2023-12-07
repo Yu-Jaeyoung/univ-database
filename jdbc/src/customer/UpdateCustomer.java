@@ -24,6 +24,8 @@ public class UpdateCustomer {
 
             // 데이터베이스의 연결을 설정한다.
             conn = DriverManager.getConnection(Conf.DB_URL, Conf.DB_USER, Conf.DB_PASSWORD);
+            conn.setAutoCommit(false); // 하나의 트랜잭션으로 묶음
+            // conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             // 고객 정보가 있는지 확인한다
 
@@ -45,8 +47,17 @@ public class UpdateCustomer {
                 psmtUpdate.executeUpdate();
 
                 System.out.println(customerId + "의 정보가 수정되었습니다.");
+
+                // System.in.read(); // 트랜잭션 확인용
+
+                conn.commit();
             }
         } catch (Exception e) {
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             e.printStackTrace();
         } finally {
             try {

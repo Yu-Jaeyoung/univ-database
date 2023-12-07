@@ -17,6 +17,7 @@ public class SelectCustomer {
 
             // 데이터베이스의 연결을 설정한다.
             conn = DriverManager.getConnection(Conf.DB_URL, Conf.DB_USER, Conf.DB_PASSWORD);
+            conn.setAutoCommit(false);
 
             // 고객 정보를 검색한다
             // TODO 전체 고객 정보 검색문 완성
@@ -46,6 +47,9 @@ public class SelectCustomer {
                 System.out.printf("%-12s : %3s : %3d : %-6s : %-3s : %5d %n"
                         , customerId, customerName, age, grade, jobTitle, savedMoney);
             }
+
+            conn.commit();
+
         } catch (Exception e) {
             e.printStackTrace();
         } finally { // 가비지 컬렉션 --> Garbage Collection
